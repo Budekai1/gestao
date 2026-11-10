@@ -208,7 +208,6 @@ tr:hover td { background: var(--table-hover); }
   transition: transform 0.3s ease;
   border-left: 1px solid var(--border);
 }
-
 .panel.show { transform: translateX(0) !important; }
 
 .panel header { 
@@ -219,7 +218,6 @@ tr:hover td { background: var(--table-hover); }
   align-items: center !important; 
   justify-content: space-between !important; 
 }
-
 .panel header h2 { font-size: 1rem !important; color: var(--title-color) !important; background: transparent !important; padding: 0 !important; border: none !important; }
 .p-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--muted); transition: color 0.2s; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
 .p-close:hover { background: var(--accent-red-light); color: var(--accent-red); }
@@ -380,6 +378,7 @@ tr:hover td { background: var(--table-hover); }
         <select id="alocRua" onchange="atualizarOpcoesLadoPorRua(); renderAlocacao()">
           <option value="01">01</option>
           <option value="02">02</option>
+          <option value="07">07</option>
         </select>
         <label>Lado:</label>
         <select id="alocLado" onchange="renderAlocacao()"><option value="">Todos</option><option value="PAR">PAR</option><option value="IMPAR">ÍMPAR</option></select>
@@ -875,12 +874,35 @@ function fecharPainel(nome){
   document.getElementById('panel-'+nome).classList.remove('show');
   document.getElementById('overlay-'+nome).classList.remove('show');
 }
+
+function popularSelectRuas() {
+  const selRua = document.getElementById('alocRua');
+  if (!selRua) return;
+  const ruaAtual = selRua.value;
+  const ruasUnicas = [...new Set(STORE.armazem.map(a => a.rua).filter(Boolean))].sort();
+  if (ruasUnicas.length > 0) {
+    selRua.innerHTML = ruasUnicas.map(r => `<option value="${r}">${r}</option>`).join('');
+    if (ruasUnicas.includes(ruaAtual)) selRua.value = ruaAtual;
+    else selRua.value = ruasUnicas[0];
+  } else {
+    selRua.innerHTML = '<option value="01">01</option><option value="02">02</option><option value="07">07</option>';
+  }
+  atualizarOpcoesLadoPorRua();
+}
+
 function atualizarOpcoesLadoPorRua() {
   const selRua = document.getElementById('alocRua');
   const selLado = document.getElementById('alocLado');
   if (!selRua || !selLado) return;
-  if (selRua.value === '02') {
+  
+  const rua = selRua.value;
+  const ladosDisponiveis = [...new Set(STORE.armazem.filter(a => a.rua === rua).map(a => a.lado).filter(Boolean))];
+  
+  if (rua === '02' || (ladosDisponiveis.length === 1 && ladosDisponiveis[0] === 'IMPAR')) {
     selLado.innerHTML = '<option value="">Todos</option><option value="IMPAR">ÍMPAR</option>';
+    selLado.value = '';
+  } else if (ladosDisponiveis.length === 1 && ladosDisponiveis[0] === 'PAR') {
+    selLado.innerHTML = '<option value="">Todos</option><option value="PAR">PAR</option>';
     selLado.value = '';
   } else {
     selLado.innerHTML = '<option value="">Todos</option><option value="PAR">PAR</option><option value="IMPAR">ÍMPAR</option>';
@@ -1318,7 +1340,6 @@ function importarArmazem(input){
       let rua = norm(val(linha, ['RUA']));
       if(!rua) rua = endereco.substring(2,4);
       rua = rua.padStart(2,'0');
-      if(rua !== '01' && rua !== '02') return;
       let lado = normLado(val(linha, ['LADO']));
       if(!lado) lado = derivarLado(endereco);
       if(rua === '02' && lado === 'PAR') return;
@@ -1331,8 +1352,9 @@ function importarArmazem(input){
       let altura = norm(val(linha, ['ANDAR','ALTURA','NIVEL','NÍVEL']));
       if(!altura) altura = endereco.substring(7,9);
       const cat = categoriaAltura(altura);
-      STORE.armazem.push({endereco, rua, lado, montante, altura, categoria: cat, status: 0});
+      STORE.armazem.push({endereco, bloco, rua, lado, montante, altura, categoria: cat, status: 0});
     });
+    popularSelectRuas();
     const statusArmazem = document.getElementById('statusArmazem');
     if(statusArmazem) statusArmazem.textContent = STORE.armazem.length + ' posições vazias e ativas importadas.';
     toast('Armazém importado: ' + STORE.armazem.length + ' posições','success');
@@ -1743,6 +1765,7 @@ function confirmarZerar() {
     localStorage.removeItem('wms_backup_geral');
     Object.keys(STORE).forEach(k => STORE[k] = []);
     carregarCodigos();
+    popularSelectRuas();
     renderRelacao(); renderIcs(); renderAlocacao(); renderSaida(); renderConcatenar(); renderPalletEndereco(); renderCodigos(); renderValidacaoFinal(); renderErros();
     toast('Sistema zerado com sucesso.', 'info');
   });
@@ -1757,6 +1780,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(backup) {
       const dados = JSON.parse(backup);
       Object.keys(dados).forEach(k => { if(STORE[k] !== undefined) STORE[k] = dados[k]; });
+      popularSelectRuas();
       renderRelacao(); renderIcs(); renderAlocacao(); renderSaida(); renderConcatenar(); renderPalletEndereco(); renderCodigos(); renderValidacaoFinal(); renderErros();
     }
   } catch(e) {}
