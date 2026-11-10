@@ -710,14 +710,28 @@ function normLote(t) {
   }
   return limpo;
 }
-function categoriaAltura(h){
-  let n = parseInt(h,10);
+
+// Classificação por bloco e número de nível/andar
+function categoriaAltura(h, bloco = 'PP'){
+  let n = parseInt(h, 10);
   if(isNaN(n)) return '—';
+  const bl = String(bloco || 'PP').toUpperCase().trim();
+  
+  if (bl === 'DP') {
+    // DP: 00..02 Baixo | 03..05 Médio | 06 Alto
+    if (n >= 0 && n <= 2) return 'BAIXO';
+    if (n >= 3 && n <= 5) return 'MÉDIO';
+    if (n >= 6) return 'ALTO';
+    return '—';
+  }
+
+  // Bloco PP e demais
   if(n >= 1 && n <= 3) return 'BAIXO';
   if(n >= 4 && n <= 6) return 'MÉDIO';
   if(n >= 7) return 'ALTO';
   return '—';
 }
+
 function categoriaAlturaTexto(t){
   let s = norm(t);
   if(s.includes('BAIX')) return 'BAIXO';
@@ -725,12 +739,14 @@ function categoriaAlturaTexto(t){
   if(s.includes('ALT')) return 'ALTO';
   return '—';
 }
-function parseAltura(v){
+
+function parseAltura(v, bloco = 'PP'){
   if(v === null || v === undefined) return {num:null, cat:'—'};
   let s = String(v).trim();
-  if(/^\d+$/.test(s)){ let n = parseInt(s,10); return {num:n, cat:categoriaAltura(n)}; }
+  if(/^\d+$/.test(s)){ let n = parseInt(s,10); return {num:n, cat:categoriaAltura(n, bloco)}; }
   return {num:null, cat:categoriaAlturaTexto(s)};
 }
+
 function toast(msg, tipo='info'){
   tocarSom(tipo);
   const icons = {success:'✅', error:'❌', info:'ℹ', warning:'⚠️'};
@@ -742,6 +758,7 @@ function toast(msg, tipo='info'){
   c.appendChild(el);
   setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},3500);
 }
+
 function lerArquivo(file, cb) {
   const reader = new FileReader();
   const limparJsonVazios = (json) => {
@@ -808,10 +825,12 @@ function acharColunaFlex(linha, alias, padroes){
   for(const p of padroes){ for(const k of keys){ if(normCab(k).includes(p)) return k; } }
   return null;
 }
+
 function val(linha, alias){
   const k = acharColuna(linha, alias);
   return k ? linha[k] : '';
 }
+
 function baixarExcel(abas, filename){
   const wb = XLSX.utils.book_new();
   abas.forEach(a => {
@@ -841,6 +860,7 @@ function fecharModalInicio(){
     toast('Atenção: Sem o Armazém ou Estoque Local completos, algumas rotinas podem ficar limitadas.', 'warning');
   }
 }
+
 function mudarAba(nome){
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   const tabEl = document.getElementById('tab-'+nome);
@@ -851,6 +871,7 @@ function mudarAba(nome){
   if(nome === 'pallet-endereco') gerarPalletEndereco();
   if(nome === 'validacao-final') gerarValidacaoFinal();
 }
+
 function abrirPainel(nome){
   tocarSom('info');
   document.getElementById('panel-'+nome).classList.add('show');
@@ -858,6 +879,7 @@ function abrirPainel(nome){
   if(nome === 'codigos') renderCodigos();
   if(nome === 'erros') renderErros();
 }
+
 function baixarCodigosExcel() {
   if (!STORE.codigos || STORE.codigos.length === 0) {
     toast('Não há códigos cadastrados para exportar.', 'warning');
@@ -870,6 +892,7 @@ function baixarCodigosExcel() {
   baixarExcel([{ nome: "Codigos Clientes", data: dadosParaExportar }], "codigos_clientes.xlsx");
   toast('Arquivo de códigos baixado com sucesso!', 'success');
 }
+
 function fecharPainel(nome){
   document.getElementById('panel-'+nome).classList.remove('show');
   document.getElementById('overlay-'+nome).classList.remove('show');
@@ -908,12 +931,14 @@ function atualizarOpcoesLadoPorRua() {
     selLado.innerHTML = '<option value="">Todos</option><option value="PAR">PAR</option><option value="IMPAR">ÍMPAR</option>';
   }
 }
+
 function atualizarProcessosSubsequentes() {
   gerarSaida();
   gerarConcatenar();
   gerarPalletEndereco();
   gerarValidacaoFinal();
 }
+
 function carregarCodigos(){
   try{
     STORE.codigos = JSON.parse(localStorage.getItem(LS_KEY)) || [];
@@ -922,14 +947,17 @@ function carregarCodigos(){
   }
   atualizarBadgeCodigos();
 }
+
 function salvarCodigos(){
   localStorage.setItem(LS_KEY, JSON.stringify(STORE.codigos));
   atualizarBadgeCodigos();
 }
+
 function atualizarBadgeCodigos(){
   const badge = document.getElementById('badgeCodigos');
   if(badge) badge.textContent = STORE.codigos.length;
 }
+
 function adicionarCodigo(){
   const c = norm(document.getElementById('novoCodigo').value);
   const n = String(document.getElementById('novoNome').value).trim();
@@ -942,6 +970,7 @@ function adicionarCodigo(){
   document.getElementById('novoNome').value = '';
   toast('Código adicionado com sucesso!','success');
 }
+
 function removerCodigo(i){
   STORE.codigos.splice(i, 1); 
   salvarCodigos(); 
@@ -949,6 +978,7 @@ function removerCodigo(i){
   atualizarProcessosSubsequentes();
   toast('Código removido','info');
 }
+
 function confirmarLimparCodigos(){
   abrirModal('Excluir Todos','Tem certeza que deseja excluir TODOS os códigos de clientes?','🗑️',()=>{
     STORE.codigos = []; 
@@ -958,12 +988,14 @@ function confirmarLimparCodigos(){
     toast('Todos os códigos foram excluídos','success');
   });
 }
+
 function confirmarLimparErros(){
   STORE.erros = []; 
   salvarErros();
   renderErros();
   toast('Central de erros limpa com sucesso!', 'success');
 }
+
 function importarCodigos(input){
   if(!input.files.length) return;
   lerArquivo(input.files[0], json => {
@@ -983,6 +1015,7 @@ function importarCodigos(input){
     input.value = '';
   });
 }
+
 function renderCodigos(){
   const buscaEl = document.getElementById('buscaCodigos');
   const busca = buscaEl ? norm(buscaEl.value) : '';
@@ -1020,6 +1053,7 @@ function registrarErro(categoria, mensagem, pallet, lote='', awb='', produto='')
   salvarErros(); 
   renderErros();
 }
+
 function salvarErros(){ atualizarBadgeErros(); }
 function atualizarBadgeErros(){
   const badge = document.getElementById('badgeErros');
@@ -1030,6 +1064,7 @@ function atualizarBadgeErros(){
     else btnHeader.classList.remove('btn-piscando');
   }
 }
+
 function renderErros(){
   const buscaEl = document.getElementById('buscaErros');
   const busca = buscaEl ? norm(buscaEl.value) : '';
@@ -1090,6 +1125,7 @@ function renderErros(){
     </tr>`;
   }).join('');
 }
+
 function baixarErrosExcel() {
   if(!STORE.erros.length){ toast('Não há registros para baixar.', 'warning'); return; }
   const dadosParaExportar = STORE.erros.map(e => ({
@@ -1123,7 +1159,6 @@ function compararRelacaoComICS() {
 
 function processarIcsIndependente(jsonIcs) {
   STORE.ics = [];
-
   const contagemAwb = new Map();
 
   jsonIcs.forEach(linha => {
@@ -1195,7 +1230,7 @@ function processarIcsIndependente(jsonIcs) {
       const relMatch = STORE.relacao.find(r => normLote(r.lote) === lote);
       if (relMatch) {
         alturaFinal = relMatch.altura || '—';
-        categoriaFinal = relMatch.categoria || categoriaAltura(alturaFinal);
+        categoriaFinal = relMatch.categoria || categoriaAlturaTexto(alturaFinal);
       }
     }
 
@@ -1332,28 +1367,39 @@ function importarArmazem(input){
       if(!endereco) return;
       endereco = normalizarEndereco(endereco);
       if(!endereco) return;
+      
       let ativo = norm(val(linha, ['ATIVO','STATUS_ATIVO','ACTIVE']));
       if(ativo !== '' && ativo !== 'S') return;
+      
       let bloco = norm(val(linha, ['BLOCO','BL']));
       if(!bloco) bloco = endereco.substring(0,2);
       if(bloco !== 'PP' && bloco !== 'DP') return;
+      
       let rua = norm(val(linha, ['RUA']));
       if(!rua) rua = endereco.substring(2,4);
       rua = rua.padStart(2,'0');
+      
       let lado = normLado(val(linha, ['LADO']));
       if(!lado) lado = derivarLado(endereco);
       if(rua === '02' && lado === 'PAR') return;
+      
       let estoque = val(linha, ['ESTOQUE','STATUS','SITUACAO','SITUAÇÃO']);
       let status = parseInt(estoque, 10);
       if(isNaN(status)) status = (norm(estoque) === 'CHEIO' || norm(estoque) === 'OCUPADO' || norm(estoque) === '1') ? 1 : 0;
       if(status !== 0) return;
+      
       let montante = norm(val(linha, ['PREDIE','PREDIO','MONTANTE','PRÉDIO']));
       if(!montante) montante = endereco.substring(4,7);
-      let altura = norm(val(linha, ['ANDAR','ALTURA','NIVEL','NÍVEL']));
+      
+      let altura = norm(val(linha, ['ANDAR','NIVEL','NÍVEL']));
       if(!altura) altura = endereco.substring(7,9);
-      const cat = categoriaAltura(altura);
+      
+      // Categorização exata respeitando a regra do bloco DP vs PP
+      const cat = categoriaAltura(altura, bloco);
+      
       STORE.armazem.push({endereco, bloco, rua, lado, montante, altura, categoria: cat, status: 0});
     });
+    
     popularSelectRuas();
     const statusArmazem = document.getElementById('statusArmazem');
     if(statusArmazem) statusArmazem.textContent = STORE.armazem.length + ' posições vazias e ativas importadas.';
@@ -1361,6 +1407,7 @@ function importarArmazem(input){
     input.value = '';
   });
 }
+
 function normalizarEndereco(e){
   let s = e.replace(/[^A-Z0-9]/g,'');
   const comecaValido = s.startsWith('PP') || s.startsWith('DP');
@@ -1368,10 +1415,12 @@ function normalizarEndereco(e){
   if(comecaValido && s.length >= 11) return s.substring(0,11);
   return null;
 }
+
 function derivarLado(endereco){
   const prefixo = parseInt(endereco.substring(9,11), 10);
   return (prefixo % 2 === 0) ? 'PAR' : 'IMPAR';
 }
+
 function processarDadosEstoqueLocal(json){
   if(!json.length) return;
   STORE.estoqueLocalRaw = json;
@@ -1391,6 +1440,7 @@ function processarDadosEstoqueLocal(json){
     });
   });
 }
+
 function importarEstoqueLocalInicial(input) {
   if(!input.files.length) return;
   lerArquivo(input.files[0], json => {
@@ -1402,6 +1452,7 @@ function importarEstoqueLocalInicial(input) {
     input.value = '';
   });
 }
+
 function importarEstoquePosSubida(input) {
   if (!input.files.length) return;
   lerArquivo(input.files[0], json => {
@@ -1418,11 +1469,11 @@ function executarAlocacao(){
   const rua = document.getElementById('alocRua').value;
   let ladoSel = document.getElementById('alocLado').value;
   if(rua === '02' && ladoSel === 'PAR') ladoSel = '';
+  
   let posicoes = STORE.armazem.filter(a => a.rua === rua);
   if(ladoSel) posicoes = posicoes.filter(a => a.lado === ladoSel);
   
   const porPallet = {};
-  
   STORE.ics.forEach(r => {
     if(!porPallet[r.pallet]) porPallet[r.pallet] = [];
     porPallet[r.pallet].push(r);
@@ -1436,8 +1487,15 @@ function executarAlocacao(){
     const registros = porPallet[pallet];
     if(registros.length === 0) return;
     const cat = registros[0].categoria;
+    
+    // Aloca estritamente na categoria de altura certa (BAIXO / MÉDIO / ALTO)
     let pos = posicoes.find(p => !usadas.has(p.endereco) && p.categoria === cat);
-    if(!pos) pos = posicoes.find(p => !usadas.has(p.endereco));
+    
+    // Se não for ALTO e não achar exato, só aceita posições que não sejam indefinidas
+    if(!pos && cat !== 'ALTO') {
+      pos = posicoes.find(p => !usadas.has(p.endereco) && (cat === '—' || p.categoria === cat));
+    }
+    
     if(pos) {
       usadas.add(pos.endereco);
       registros.forEach(r => {
@@ -1450,12 +1508,11 @@ function executarAlocacao(){
   
   if(palletsRestantes.length > 0 && ladoSel) {
     const ladoOposto = ladoSel === 'IMPAR' ? 'PAR' : 'IMPAR';
-    abrirModal('Endereços esgotados', `Deseja alocar o restante no lado ${ladoOposto} da rua ${rua}?`, '⚠️', () => {
+    abrirModal('Endereços esgotados', `Deseja alocar os ${palletsRestantes.length} pallets restantes no lado ${ladoOposto} da rua ${rua}?`, '⚠️', () => {
       let posicoesOpostas = STORE.armazem.filter(a => a.rua === rua && a.lado === ladoOposto);
       palletsRestantes.forEach(item => {
         let pos = posicoesOpostas.find(p => !usadas.has(p.endereco) && p.categoria === item.cat);
-        if(!pos) pos = posicoesOpostas.find(p => !usadas.has(p.endereco));
-        const enderecoAlocado = pos ? pos.endereco : 'SEM POSIÇÃO DISPONÍVEL';
+        const enderecoAlocado = pos ? pos.endereco : 'SEM POSIÇÃO DISPONÍVEL (ALTURA)';
         if(pos) usadas.add(pos.endereco);
         item.registros.forEach(r => {
           STORE.alocacao.push({produto: r.produto, awb: r.awb, lote: r.lote, pallet: r.pallet, categoria: item.cat, endereco: enderecoAlocado});
@@ -1465,10 +1522,16 @@ function executarAlocacao(){
       toast('Alocação concluída!', 'success');
     });
   } else {
+    palletsRestantes.forEach(item => {
+      item.registros.forEach(r => {
+        STORE.alocacao.push({produto: r.produto, awb: r.awb, lote: r.lote, pallet: r.pallet, categoria: item.cat, endereco: 'SEM POSIÇÃO DISPONÍVEL (ALTURA)'});
+      });
+    });
     renderAlocacao(); atualizarProcessosSubsequentes();
     toast('Alocação executada com sucesso!', 'success');
   }
 }
+
 function renderAlocacao(){
   const selPallet = document.getElementById('filtroPalletAloc');
   if(!selPallet) return;
@@ -1501,7 +1564,7 @@ function renderAlocacao(){
       <td>${r.awb}</td>
       <td><strong>${r.lote}</strong></td>
       <td>${r.pallet}</td>
-      <td><span class="${r.endereco === 'SEM POSIÇÃO DISPONÍVEL' ? 'badge red' : ''}">${r.endereco}</span></td>
+      <td><span class="${r.endereco.includes('SEM POSIÇÃO') ? 'badge red' : ''}">${r.endereco}</span></td>
     </tr>
   `).join('');
 }
@@ -1532,6 +1595,7 @@ function gerarSaida(){
   });
   renderSaida();
 }
+
 function renderSaida(){
   const buscaEl = document.getElementById('buscaSaida');
   const busca = buscaEl ? norm(buscaEl.value) : '';
@@ -1543,6 +1607,7 @@ function renderSaida(){
   if(!filtrados.length){ tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">Nenhum registro de saída localizado.</td></tr>'; return; }
   tbody.innerHTML = filtrados.map(s => `<tr><td><strong>${s.Codigo}</strong></td><td>${s.Endereço}</td><td>${s.Estoque}</td><td>${s.DataVencimento}</td><td><strong>${s.Awb}</strong></td></tr>`).join('');
 }
+
 function baixarSaidaExcel(){
   if(!STORE.saida.length){ toast('Nenhum dado na aba Saída', 'warning'); return; }
   baixarExcel([{nome: 'Saida', data: STORE.saida}], 'saida_wms.xlsx');
@@ -1552,7 +1617,7 @@ function baixarSaidaExcel(){
 function gerarConcatenar(){
   STORE.concatenar = [];
   STORE.alocacao.forEach(item => {
-    if(item.endereco && item.endereco !== 'SEM POSIÇÃO DISPONÍVEL'){
+    if(item.endereco && !item.endereco.includes('SEM POSIÇÃO')){
       let codigoCliente = '';
       const codObj = STORE.codigos.find(c => norm(c.nome) === norm(item.produto));
       if(codObj) codigoCliente = codObj.codigo;
@@ -1567,6 +1632,7 @@ function gerarConcatenar(){
   });
   renderConcatenar();
 }
+
 function formatarLinhaConcatenada(obj){
   const c = String(obj.codigo || '').padEnd(25, ' ');
   const e = String(obj.endereco || '').padEnd(31, ' ');
@@ -1575,6 +1641,7 @@ function formatarLinhaConcatenada(obj){
   const a = String(obj.awb || '').padEnd(53, ' ');
   return { texto: `${c}${e}${q}${d}${a}`, raw: obj };
 }
+
 function renderConcatenar(){
   const buscaEl = document.getElementById('buscaConcatenar');
   const busca = buscaEl ? norm(buscaEl.value) : '';
@@ -1586,6 +1653,7 @@ function renderConcatenar(){
   if(!filtrados.length){ tbody.innerHTML = '<tr><td class="empty-msg">Nenhum registro concatenado.</td></tr>'; return; }
   tbody.innerHTML = filtrados.map(item => `<tr><td><code style="font-family:monospace; font-size:.88rem; background:var(--sub-surface); color:var(--text); padding:6px 10px; display:block; white-space:pre; border-radius:4px; border:1px solid var(--border);">${item.texto}</code></td></tr>`).join('');
 }
+
 function baixarConcatenarTxt(){
   if(!STORE.concatenar.length) gerarConcatenar();
   if(!STORE.concatenar.length){ toast('Sem dados para gerar arquivo.', 'warning'); return; }
@@ -1598,6 +1666,7 @@ function baixarConcatenarTxt(){
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   toast('Arquivo gerado com sucesso!', 'success');
 }
+
 function baixarLocaisTxt(){
   if(!STORE.concatenar.length) gerarConcatenar();
   const locais = STORE.concatenar.map(item => item.raw.endereco).filter(Boolean).join('\n');
@@ -1618,13 +1687,14 @@ function gerarPalletEndereco(){
       if(matchIcs) pVal = matchIcs.pallet || matchIcs.pallete || matchIcs.palete || '';
     }
     pVal = String(pVal).trim();
-    if(pVal && item.endereco && item.endereco !== 'SEM POSIÇÃO DISPONÍVEL' && !mapa.has(pVal)){
+    if(pVal && item.endereco && !item.endereco.includes('SEM POSIÇÃO') && !mapa.has(pVal)){
       mapa.set(pVal, item.endereco);
     }
   });
   mapa.forEach((endereco, pallet) => STORE.palletEndereco.push({ pallet, endereco }));
   renderPalletEndereco();
 }
+
 function renderPalletEndereco(){
   const buscaEl = document.getElementById('buscaPalletEndereco');
   const busca = buscaEl ? norm(buscaEl.value) : '';
@@ -1636,6 +1706,7 @@ function renderPalletEndereco(){
   if(!filtrados.length){ tbody.innerHTML = '<tr><td colspan="2" class="empty-msg">Nenhum dado encontrado.</td></tr>'; return; }
   tbody.innerHTML = filtrados.map(item => `<tr><td><strong>${item.pallet}</strong></td><td>${item.endereco}</td></tr>`).join('');
 }
+
 function copiarTabelaOutlook() {
   if(!STORE.palletEndereco.length) gerarPalletEndereco();
   if(!STORE.palletEndereco.length){ toast('Não há dados para copiar.', 'warning'); return; }
@@ -1659,6 +1730,7 @@ function copiarTabelaOutlook() {
     fallbackCopiar(plainText);
   }
 }
+
 function fallbackCopiar(txt) {
   const ta = document.createElement('textarea');
   ta.value = txt;
@@ -1674,7 +1746,7 @@ function gerarValidacaoFinal() {
   if (!STORE.alocacao || STORE.alocacao.length === 0) { renderValidacaoFinal(); return; }
   
   STORE.alocacao.forEach(itemAloc => {
-    if (!itemAloc || !itemAloc.awb || itemAloc.endereco === 'SEM POSIÇÃO DISPONÍVEL') return;
+    if (!itemAloc || !itemAloc.awb || itemAloc.endereco.includes('SEM POSIÇÃO')) return;
     const awbProcurado = norm(itemAloc.awb);
     const itensEstoque = STORE.estoqueLocal.filter(e => norm(e.awb) === awbProcurado);
     
@@ -1695,6 +1767,7 @@ function gerarValidacaoFinal() {
   });
   renderValidacaoFinal();
 }
+
 function renderValidacaoFinal() {
   const buscaEl = document.getElementById('buscaValidacaoFinal');
   const busca = buscaEl ? norm(buscaEl.value) : '';
@@ -1732,6 +1805,7 @@ function renderValidacaoFinal() {
     </tr>`;
   }).join('');
 }
+
 function baixarValidacaoFinalExcel() {
   if(!STORE.validacaoFinal.length) { toast('Nenhum dado de validação para baixar.', 'warning'); return; }
   const dados = STORE.validacaoFinal.map(v => ({ "AWB": v.awb, "LOTE": v.lote, "ENDEREÇO PLANEJADO": v.enderecoPlanejado, "ENDEREÇO NO SENIOR": v.enderecoSenior, "STATUS DA VALIDAÇÃO": v.status }));
@@ -1760,6 +1834,7 @@ function salvarHistorico() {
   }
   toast('Histórico salvo e arquivo Excel baixado com sucesso!', 'success');
 }
+
 function confirmarZerar() {
   abrirModal('Zerar Sistema', 'Tem certeza que deseja apagar todos os dados e reiniciar o sistema?', '🗑️', () => {
     localStorage.removeItem('wms_backup_geral');
