@@ -513,7 +513,6 @@ tr:hover td { background: var(--table-hover); }
   </div>
 </aside>
 
-<!-- PAINEL CENTRAL DE ERROS E INCONSISTÊNCIAS -->
 <div class="panel-overlay" id="overlay-erros" onclick="fecharPainel('erros')"></div>
 <aside class="panel" id="panel-erros">
   <header>
@@ -593,7 +592,6 @@ tr:hover td { background: var(--table-hover); }
 <div id="toast-container"></div>
 
 <script>
-// --- SISTEMA DE TEMA (CLARO / ESCURO) ---
 const THEME_KEY = 'wms_theme_pref';
 
 function aplicarTema(tema) {
@@ -628,7 +626,6 @@ function carregarTema() {
   aplicarTema('dark');
 }
 
-// --- SISTEMA DE SOM NATIVO (Bipe Clássico Rápido) ---
 let audioCtx = null;
 function obterAudioContext() {
   if (!audioCtx) {
@@ -1080,7 +1077,6 @@ function baixarErrosExcel() {
   toast('Arquivo Excel baixado com sucesso!', 'success');
 }
 
-// --- Funções de Relação, ICS e Alocação ---
 function compararRelacaoComICS() {
   if (!STORE.ics || STORE.ics.length === 0 || !STORE.relacao || STORE.relacao.length === 0) return;
 
@@ -1318,7 +1314,7 @@ function importarArmazem(input){
       if(ativo !== '' && ativo !== 'S') return;
       let bloco = norm(val(linha, ['BLOCO','BL']));
       if(!bloco) bloco = endereco.substring(0,2);
-      if(bloco !== 'PP') return;
+      if(bloco !== 'PP' && bloco !== 'DP') return;
       let rua = norm(val(linha, ['RUA']));
       if(!rua) rua = endereco.substring(2,4);
       rua = rua.padStart(2,'0');
@@ -1345,8 +1341,9 @@ function importarArmazem(input){
 }
 function normalizarEndereco(e){
   let s = e.replace(/[^A-Z0-9]/g,'');
-  if(s.length === 11 && s.startsWith('PP')) return s;
-  if(s.startsWith('PP') && s.length >= 11) return s.substring(0,11);
+  const comecaValido = s.startsWith('PP') || s.startsWith('DP');
+  if(s.length === 11 && comecaValido) return s;
+  if(comecaValido && s.length >= 11) return s.substring(0,11);
   return null;
 }
 function derivarLado(endereco){
