@@ -61,8 +61,17 @@ header {
   z-index: 20;
 }
 header h1 { font-size: 1.2rem; font-weight: 700; color: var(--title-color); display: flex; align-items: center; gap: 10px; flex: 1; }
-.logo { font-size: 1.4rem; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--primary); color: #fff; }
+.logo-total {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  transition: filter 0.2s ease;
+}
 
+body.light-mode .logo-total {
+  filter: none;
+}
 .hbtn { 
   background: var(--surface); 
   border: 1px solid var(--border); 
@@ -317,7 +326,7 @@ tr:hover td { background: var(--table-hover); }
   <h1 style="display: flex; align-items: center; gap: 12px;">
     <img src="./logo1.png" alt="Total Express" class="logo-total">
     Dev - Gestão de Pallets e armazém.
-</h1>
+  </h1>
   <button class="hbtn" id="btnThemeToggle" onclick="alternarTema()" title="Alternar Modo Claro/Escuro">☀️ Modo Claro</button>
   <button class="hbtn" onclick="abrirPainel('erros')">🚨 Erros<span class="badge" id="badgeErros" style="background:#ef4444;color:#fff;border-radius:999px;font-size:.68rem;padding:1px 7px;font-weight:700;">0</span></button>
   <button class="hbtn success" onclick="salvarHistorico()">💾 Baixar Historico </button>
